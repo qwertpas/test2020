@@ -2,12 +2,15 @@ package frc.robot;
 
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkMaxLowLevel.MotorType;
+
+import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.VictorSP;
 import edu.wpi.first.wpilibj.XboxController;
+import edu.wpi.first.wpilibj.controller.PIDController;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
@@ -34,10 +37,15 @@ public class Robot extends TimedRobot {
   Encoder turretEncoder = new Encoder(2, 3);
   Encoder ballTubeEncoder = new Encoder(4, 5);
 
+  DigitalInput linebreakIn = new DigitalInput(9);
+  DigitalInput linebreakOut = new DigitalInput(8);
+
   DoubleSolenoid OTBSolenoid = new DoubleSolenoid(0, 7);
   DoubleSolenoid shifterSolenoid = new DoubleSolenoid(1, 6);
 
   DifferentialDrive drivetrain;
+
+  PIDController controller = new PIDController(0, 0, 0);
 
   String[] numberInputs = {
     "turretPower",
@@ -46,7 +54,10 @@ public class Robot extends TimedRobot {
     "serializerPower",
     "ballTubePower",
     "hoodPower",
-    "hopupPower"
+    "hopupPower",
+    "shooterVeloTarget",
+    "shooterP",
+    "shooterF"
   };
 
   @Override
@@ -68,6 +79,8 @@ public class Robot extends TimedRobot {
     SmartDashboard.putNumber("hoodEncoder", hoodEncoder.get());
     SmartDashboard.putNumber("turretEncoder", turretEncoder.get());
     SmartDashboard.putNumber("ballTubeEncoder", ballTubeEncoder.get());
+    SmartDashboard.putBoolean("linebreakIn", linebreakIn.get());
+    SmartDashboard.putBoolean("linebreakOut", linebreakOut.get());
   }
 
   @Override
@@ -84,5 +97,11 @@ public class Robot extends TimedRobot {
 
     OTBSolenoid.set(SmartDashboard.getBoolean("OTBSolenoid", false) ? DoubleSolenoid.Value.kForward : DoubleSolenoid.Value.kReverse);
     shifterSolenoid.set(SmartDashboard.getBoolean("shifterSolenoid", false) ? DoubleSolenoid.Value.kForward : DoubleSolenoid.Value.kReverse);
+
+    controller.setP(SmartDashboard.getNumber("shooterP", 0));
+    double target = SmartDashboard.getNumber("shooterVeloTarget", 0);
+    double feedforward = SmartDashboard.getNumber("shooterF", 0) * target;
+    double PIDpower = controller.calculate(shooter1.getEncoder().getVelocity(), target);
+    SmartDashboard.putNumber("shooterPower", feedforward + PIDpower);
   }
 }
